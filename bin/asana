@@ -50,7 +50,7 @@ begin
   elsif opts[:task]
     Asana::CLI.show_task opts[:task], opts[:project], opts[:workspace]
   elsif opts[:project]
-    Asana::CLI.project_tasks opts[:project]
+    Asana::CLI.project_tasks opts[:project], opts[:workspace]
   elsif opts[:workspace]
     Asana::CLI.workspace_tasks opts[:workspace]
   elsif opts[:list]

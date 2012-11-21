@@ -18,29 +18,34 @@ module Asana
         task.create_story :text => message
       end
 
-      def project_tasks(project_id)
-        project = Asana::Project.all.detect {|p| p.name.downcase == project_id.downcase }
-        raise CLIError.new "Unable to find a project named #{project_id}" unless project
+      def project_tasks(project_id, workspace_id = nil)
+        projects = resolve workspace_id, project_id, nil
+        raise CLIError.new "Unable to find a project named #{project_id}" if projects.empty?
 
-        puts "\n"
-        puts "%s\t Tasks" % project.name.light_green
-        puts ("-" * 60).light_white
-        project.tasks.each do |task|
-          puts "%s\t%s" % [task.id.to_s.light_yellow, task.name.light_white]
+        projects.each do |project|
+          puts "\n"
+          puts "%s\t Tasks" % project.name.light_green
+          puts ("-" * 60).light_white
+          project.tasks.each do |task|
+            puts "%s\t%s" % [task.id.to_s.light_yellow, task.name.light_white]
+          end
+          puts "\n"
         end
-        puts "\n"
       end
 
       def workspace_tasks(workspace_id)
-        workspace = Asana::Workspace.all.detect {|p| p.name.downcase == workspace_id.downcase }
-        raise CLIError.new "Unable to find a workspace named #{workspace_id}" unless workspace
-        puts "\n"
-        puts "%s\tProjects" % workspace.name.light_green
-        puts ("-" * 60).light_white
-        workspace.projects.each do |project|
-          puts "%s\t%s" % [project.id.to_s.light_yellow, project.name.light_white]
+        workspaces = resolve workspace_id, nil, nil
+
+        raise CLIError.new "Unable to find a workspace named #{workspace_id}" if workspaces.empty?
+        workspaces.each do |workspace|
+          puts "\n"
+          puts "%s\tProjects" % workspace.name.light_green
+          puts ("-" * 60).light_white
+          workspace.projects.each do |project|
+            puts "%s\t%s" % [project.id.to_s.light_yellow, project.name.light_white]
+          end
+          puts "\n"
         end
-        puts "\n"
       end
 
       def list_workspaces
@@ -109,7 +114,7 @@ module Asana
           if w_id
             return [Asana::Workspace.find(w_id)]
           else
-            Asana::Workspace.all.select {|_w| w.name[w.downcase] }
+            Asana::Workspace.all.select {|_w| _w.name.downcase[w.downcase] }
           end
         end
       end
