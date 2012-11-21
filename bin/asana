@@ -3,7 +3,8 @@ require 'trollop'
 require 'asana'
 require 'colorize'
 
-opts = Trollop::options do
+parser = Trollop::Parser.new do
+  opt :list, "List all workspaces"
   opt :workspace, "Workspace", :type => :string
   opt :project, "Project", :type => :string
   opt :complete, "Complete a task", :type => :integer
@@ -13,6 +14,11 @@ opts = Trollop::options do
   opt :task, "Task to operate on", :type => :integer
   opt :key, "API key to use", :type => :string
   opt :keyfile, "API keyfile to use", :default => "~/.asana_key"
+end
+
+opts = Trollop::with_standard_exception_handling parser do
+  raise Trollop::HelpNeeded if ARGV.empty? # show help screen
+  parser.parse ARGV
 end
 
 Asana.configure do |client|
@@ -60,4 +66,13 @@ elsif opts[:workspace]
     puts "%s\t%s" % [project.id.to_s.light_yellow, project.name.light_white]
   end
   puts "\n"
+elsif opts[:list]
+  puts "\n"
+  puts "Workspaces".light_green
+  puts ("-" * 60).light_white
+  Asana::Workspace.all.each do |workspace|
+    puts "%s\t%s" % [workspace.id.to_s.light_yellow, workspace.name.light_white]
+  end
+else
+
 end
