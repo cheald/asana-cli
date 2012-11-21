@@ -5,7 +5,7 @@ require 'asana-cli/version'
 
 Gem::Specification.new do |gem|
   gem.name          = "asana-cli"
-  gem.version       = Asana::Cli::VERSION
+  gem.version       = Asana::CLI::VERSION
   gem.authors       = ["Chris Heald"]
   gem.email         = ["cheald@gmail.com"]
   gem.description   = %q{Command-line client for Asana}

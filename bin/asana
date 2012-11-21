@@ -3,6 +3,10 @@ require 'trollop'
 require 'asana'
 require 'colorize'
 
+lib = File.expand_path(File.dirname(__FILE__) + '/../lib')
+$LOAD_PATH.unshift(lib) if File.directory?(lib) && !$LOAD_PATH.include?(lib)
+require 'asana-cli'
+
 parser = Trollop::Parser.new do
   opt :list, "List all workspaces"
   opt :workspace, "Workspace", :type => :string
@@ -11,7 +15,7 @@ parser = Trollop::Parser.new do
   opt :close, "Complete a task", :type => :integer
   opt :create, "Create new task", :type => :string
   opt :message, "Comment on a task", :type => :string
-  opt :task, "Task to operate on", :type => :integer
+  opt :task, "Task to operate on", :type => :string
   opt :key, "API key to use", :type => :string
   opt :keyfile, "API keyfile to use", :default => "~/.asana_key"
 end
@@ -35,44 +39,23 @@ Asana.configure do |client|
   end
 end
 
-if opts[:complete] or opts[:close]
-  task_id = opts[:complete] || opts[:close] || opts[:task]
-  Trollop::die "Task ID required to complete" unless task_id
-  task = Asana::Task.find(task_id)
-  task.create_story :text => opts[:message] if opts[:message]
-  task.modify(:completed => true)
-  puts "Task %s closed!".light_green % task_id
-elsif opts[:message]
-  Trollop::die "Task ID required to complete" unless opts[:task]
-  task = Asana::Task.find(opts[:task])
-  task.create_story :text => opts[:message] if opts[:message]
-elsif opts[:project]
-  project = Asana::Project.all.detect {|p| p.name.downcase == opts[:project].downcase }
-  Trollop::die "Unable to find a project named #{opts[:project]}" unless project
-  puts "\n"
-  puts "%s\t Tasks" % project.name.light_green
-  puts ("-" * 60).light_white
-  project.tasks.each do |task|
-    puts "%s\t%s" % [task.id.to_s.light_yellow, task.name.light_white]
+begin
+  if opts[:complete] or opts[:close]
+    task_id = opts[:complete] || opts[:close] || opts[:task]
+    raise Asana::CLIError.new "Task ID required to complete" unless task_id
+    Asana::CLI.close task_id
+  elsif opts[:message]
+    raise Asana::CLIError.new "Task ID required to complete" unless opts[:task]
+    Asana::CLI.comment opts[:task], opts[:message]
+  elsif opts[:task]
+    Asana::CLI.show_task opts[:task], opts[:project], opts[:workspace]
+  elsif opts[:project]
+    Asana::CLI.project_tasks opts[:project]
+  elsif opts[:workspace]
+    Asana::CLI.workspace_tasks opts[:workspace]
+  elsif opts[:list]
+    Asana::CLI.list_workspaces
   end
-  puts "\n"
-elsif opts[:workspace]
-  workspace = Asana::Workspace.all.detect {|p| p.name.downcase == opts[:workspace].downcase }
-  Trollop::die "Unable to find a workspace named #{opts[:workspace]}" unless workspace
-  puts "\n"
-  puts "%s\tProjects" % workspace.name.light_green
-  puts ("-" * 60).light_white
-  workspace.projects.each do |project|
-    puts "%s\t%s" % [project.id.to_s.light_yellow, project.name.light_white]
-  end
-  puts "\n"
-elsif opts[:list]
-  puts "\n"
-  puts "Workspaces".light_green
-  puts ("-" * 60).light_white
-  Asana::Workspace.all.each do |workspace|
-    puts "%s\t%s" % [workspace.id.to_s.light_yellow, workspace.name.light_white]
-  end
-else
-
+rescue Asana::CLIError => e
+  $stderr.puts e.message.light_red
 end

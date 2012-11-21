@@ -1,5 +1,5 @@
 module Asana
-  module Cli
-    VERSION = "0.0.1"
+  module CLI
+    VERSION = "0.0.2"
   end
 end
