@@ -1,6 +1,6 @@
-# Asana::Cli
+# asana-cli
 
-TODO: Write a gem description
+Command-line client for Asana
 
 ## Installation
 
@@ -18,7 +18,18 @@ Or install it yourself as:
 
 ## Usage
 
-TODO: Write usage instructions here
+    Options:
+               --list, -l:   List all workspaces
+      --workspace, -w <s>:   Workspace
+        --project, -p <s>:   Project
+       --complete, -c <i>:   Complete a task
+          --close, -o <i>:   Complete a task
+         --create, -r <s>:   Create new task
+        --message, -m <s>:   Comment on a task
+           --task, -t <i>:   Task to operate on
+            --key, -k <s>:   API key to use
+        --keyfile, -e <s>:   API keyfile to use (default: ~/.asana_key)
+               --help, -h:   Show this message
 
 ## Contributing
 
