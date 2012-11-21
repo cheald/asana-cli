@@ -1,0 +1,63 @@
+#!/bin/env ruby
+require 'trollop'
+require 'asana'
+require 'colorize'
+
+opts = Trollop::options do
+  opt :workspace, "Workspace", :type => :string
+  opt :project, "Project", :type => :string
+  opt :complete, "Complete a task", :type => :integer
+  opt :close, "Complete a task", :type => :integer
+  opt :create, "Create new task", :type => :string
+  opt :message, "Comment on a task", :type => :string
+  opt :task, "Task to operate on", :type => :integer
+  opt :key, "API key to use", :type => :string
+  opt :keyfile, "API keyfile to use", :default => "~/.asana_key"
+end
+
+Asana.configure do |client|
+  if opts[:key]
+    client.api_key = opts[:key] if opts[:key]
+  else
+    f = File.expand_path opts[:keyfile]
+    if File.exist? f
+      config = YAML.load_file f
+      client.api_key = config["api_key"]
+    else
+      Trollop::die "Asana API keyfile \"#{opts[:keyfile]}\" missing"
+    end
+  end
+end
+
+if opts[:complete] or opts[:close]
+  task_id = opts[:complete] || opts[:close] || opts[:task]
+  Trollop::die "Task ID required to complete" unless task_id
+  task = Asana::Task.find(task_id)
+  task.create_story :text => opts[:message] if opts[:message]
+  task.modify(:completed => true)
+  puts "Task %s closed!".light_green % task_id
+elsif opts[:message]
+  Trollop::die "Task ID required to complete" unless opts[:task]
+  task = Asana::Task.find(opts[:task])
+  task.create_story :text => opts[:message] if opts[:message]
+elsif opts[:project]
+  project = Asana::Project.all.detect {|p| p.name.downcase == opts[:project].downcase }
+  Trollop::die "Unable to find a project named #{opts[:project]}" unless project
+  puts "\n"
+  puts "%s\t Tasks" % project.name.light_green
+  puts ("-" * 60).light_white
+  project.tasks.each do |task|
+    puts "%s\t%s" % [task.id.to_s.light_yellow, task.name.light_white]
+  end
+  puts "\n"
+elsif opts[:workspace]
+  workspace = Asana::Workspace.all.detect {|p| p.name.downcase == opts[:workspace].downcase }
+  Trollop::die "Unable to find a workspace named #{opts[:workspace]}" unless workspace
+  puts "\n"
+  puts "%s\tProjects" % workspace.name.light_green
+  puts ("-" * 60).light_white
+  workspace.projects.each do |project|
+    puts "%s\t%s" % [project.id.to_s.light_yellow, project.name.light_white]
+  end
+  puts "\n"
+end
